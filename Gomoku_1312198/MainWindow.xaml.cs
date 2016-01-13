@@ -16,6 +16,7 @@ using Quobject.SocketIoClientDotNet.Client;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.ComponentModel;
+using System.Configuration;
 
 namespace Gomoku_1312198
 {
@@ -91,7 +92,7 @@ namespace Gomoku_1312198
                     if (BanCo.end == Player.Human)//Nếu người chơi 2 thắng
                     {
                         BanCo.OnWin();//Khai báo sư kiện Win
-                        BanCo.OnWinOrLose();//Hiển thị 5 ô Win.
+                        BanCo.OWinorLose();//Hiển thị 5 ô Win.
                         btnStartMay.Content = "New game";
                         newgame = true;
                     }
@@ -121,7 +122,7 @@ namespace Gomoku_1312198
                     if (BanCo.end == Player.Com)//Nếu máy thắng
                     {
                         BanCo.OnLose();//Khai báo sư kiện Lose
-                        BanCo.OnWinOrLose();//Hiển thị 5 ô Lose.
+                        BanCo.OWinorLose();//Hiển thị 5 ô Lose.
                         btnStartMay.Content = "New game";
                         newgame = true;
                     }
@@ -144,7 +145,7 @@ namespace Gomoku_1312198
                 if (BanCo.end == Player.Online)//Nếu người chơi 2 thắng
                 {
                     BanCo.OnWin();//Khai báo sư kiện Win
-                    BanCo.OnWinOrLose();//Hiển thị 5 ô Win.
+                    BanCo.OWinorLose();//Hiển thị 5 ô Win.
                     ChatMessage chatMessage = new ChatMessage("Server", DateTime.Now.ToString("hh:mm:ss tt"), name + " là người thắng");
                     chatBox.VerticalAlignment = System.Windows.VerticalAlignment.Top;
                     chatBox.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
@@ -342,6 +343,7 @@ namespace Gomoku_1312198
         {
 
             connect.sendmessage(socket, txtTenOnline.Text, txtMessage.Text);
+            txtTenOnline.Text = "Type your message here...";
         }
 
         private void txtMessage_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
@@ -360,7 +362,7 @@ namespace Gomoku_1312198
         {
             if (dem == 0)
             {
-                socket = IO.Socket("ws://gomoku-lajosveres.rhcloud.com:8000");
+                socket = IO.Socket(ConfigurationManager.ConnectionStrings["chuoi"].ConnectionString);
                 btnStart.Content = "Change";
                 BanCo.Option.WhoPlayWith = Player.Online;
                 BanCo.currPlayer = Player.Online;
@@ -379,7 +381,7 @@ namespace Gomoku_1312198
                 chatBox.Items.Add(chatMessage);
                 MessageBox.Show("Ván đấu mới", "Thông báo");
                 banco.PlayAgain();
-                socket = IO.Socket("ws://gomoku-lajosveres.rhcloud.com:8000");
+                socket = IO.Socket(ConfigurationManager.ConnectionStrings["chuoi"].ConnectionString);
                 btnStart.Content = "Change";
                 BanCo.Option.WhoPlayWith = Player.Online;
                 BanCo.currPlayer = Player.Online;
@@ -418,7 +420,7 @@ namespace Gomoku_1312198
         {
             if (dem1 == 0)
             {
-                socket = IO.Socket("ws://gomoku-lajosveres.rhcloud.com:8000");
+                socket = IO.Socket(ConfigurationManager.ConnectionStrings["chuoi"].ConnectionString);
                 btnStartMay.Content = "Change";
                 BanCo.Option.WhoPlayWith = Player.MayOnline;
                 BanCo.currPlayer = Player.Human;
@@ -439,7 +441,7 @@ namespace Gomoku_1312198
                 chatBox.Items.Add(chatMessage);
                 MessageBox.Show("Ván đấu mới", "Thông báo");
                 banco.PlayAgain();
-                socket = IO.Socket("ws://gomoku-lajosveres.rhcloud.com:8000");
+                socket = IO.Socket(ConfigurationManager.ConnectionStrings["chuoi"].ConnectionString);
                 btnStartMay.Content = "Change";
                 BanCo.Option.WhoPlayWith = Player.MayOnline;
                 BanCo.currPlayer = Player.Human;

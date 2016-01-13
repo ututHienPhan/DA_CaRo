@@ -9,7 +9,8 @@ using System.Windows;
 using System.Windows.Threading;
 using System.IO;
 using System.Windows.Media.Imaging;
-
+using System.ComponentModel;
+using System.Threading;
 namespace Gomoku_1312198
 {
     enum Player
@@ -33,6 +34,7 @@ namespace Gomoku_1312198
 
     class BanCo
     {
+        private readonly BackgroundWorker worker = new BackgroundWorker();
         //Các biến chính
         public static int row, column; //Số hàng, cột
         private const int length = 40;//Độ dài mỗi ô
@@ -43,9 +45,9 @@ namespace Gomoku_1312198
         public static Grid grdBanCo; // Nơi vẽ bàn cờ
         public static LuongGiaBanCo eBoard; //Bảng lượng giá bàn cờ
         public static _5O_ChienThang OWin; // Kiểm tra 5 ô win
-        public static   Option Option; // Tùy chọn trò chơi
+        public static Option Option; // Tùy chọn trò chơi
         //Các biến phụ
-        public static DanhDau hv;
+        public static DanhDau ddau;
         // Điểm lượng giá
         public static int[] PhongThu = new int[5] { 0, 1, 9, 85, 769 };
         public static int[] TanCong = new int[5] { 0, 2, 28, 256, 2308 };
@@ -70,28 +72,31 @@ namespace Gomoku_1312198
             Option = new Option();
             OWin = new _5O_ChienThang();
             row = column = 12;
+            board = new Player[row, column];
+            ResetBoard();
+            eBoard = new LuongGiaBanCo(this);
             currPlayer = Player.None;
             end = Player.None;
             frmParent = frm;
-            grdBanCo = grd; ///Nơi vẽ cn cờ
-            board = new Player[row, column];
-            ResetBoard(); ///player.None mỗi ô cờ
-            eBoard = new LuongGiaBanCo(this); /// bảng lượng giá bàn cờ
-            hv = new DanhDau();
-            CreateHV();///l=w=60
-            grdBanCo.Children.Add(hv);
+            grdBanCo = grd;
+            ddau = new DanhDau();
+            Createddau();
+            grdBanCo.Children.Add(ddau);
             grdBanCo.MouseDown += new System.Windows.Input.MouseButtonEventHandler(grdBanCo_MouseDown);
+            worker.DoWork += wait;
+            worker.RunWorkerCompleted += danh;
         }
-
-
-        private void CreateHV()
+        private void wait(object sender, DoWorkEventArgs e)
         {
-            hv.Width = hv.Height = 60;
-            hv.HorizontalAlignment = 0;
-            hv.VerticalAlignment = 0;
-            hv.Opacity = 0;
+            Thread.Sleep(1000);
         }
-
+        private void Createddau()
+        {
+            ddau.Width = ddau.Height = 60;
+            ddau.HorizontalAlignment = 0;
+            ddau.VerticalAlignment = 0;
+            ddau.Opacity = 0;
+        }
         // Thiết lập các giá trị lưu vị trí bàn cờ.
         public void ResetBoard()
         {
@@ -115,15 +120,13 @@ namespace Gomoku_1312198
                 }
             }
         }
-
         //Bắt đầu lại trò chơi mới
-        public void PlayAgain()////nếu chơi vs máy thì gán lượt đi là máy và máy đánh trc, ngc lại chơi vs human
-                               ////chơi vs Humman hoặc online nếu lượt chơi là Human thì gán lại lượt chơi cho máy ngc lại nếu lượt chơi là máy thì gán lượt chơi lại cho ng
+        public void PlayAgain()
         {
             OWin = new _5O_ChienThang();
 
             grdBanCo.Children.Clear();//xóa hết tất cả các con cờ trên bàn cờ
-            grdBanCo.Children.Add(hv);//tạo hình vuong( tỏa tỏa)  ////có thể bỏ dòng này
+         //   grdBanCo.Children.Add(ddau);//tạo hình vuong( tỏa tỏa)
             ResetBoard();// tất cả các ô cờ chưa ai đánh hết
             this.DrawGomokuBoard();//vẻ bàn cờ lên
             if (Option.WhoPlayWith == Player.Com)
@@ -131,8 +134,6 @@ namespace Gomoku_1312198
                 if (end == Player.None)
                 {
                     currPlayer = Player.Com;
-
-                    
                     DiNgauNhien();
                 }
             }
@@ -143,19 +144,16 @@ namespace Gomoku_1312198
                     if (currPlayer == Player.Human)
                     {
                         currPlayer = Player.Com;
-
                     }
                     else if (currPlayer == Player.Com)
                     {
                         currPlayer = Player.Human;
-
                     }
                 }
             }
             end = Player.None;
         }
-
-        public static void DiNgauNhien() ///thực  hiện cho máy đi ngẫu nhiên sau đó gán lượt đi lại cho ng
+        public static void DiNgauNhien()
         {
             if (currPlayer == Player.Com)
             {
@@ -169,6 +167,33 @@ namespace Gomoku_1312198
         }
         public static int rows, columns;
         public static int test;
+        Node node = new Node();
+        public void danh(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (currPlayer == Player.Com && end == Player.None)//Nếu lượt đi là máy và trận đấu chưa kết thúc
+            {
+                //Tìm đường đi cho máy
+                eBoard.ResetBoard();
+                LuongGia(Player.Com);//Lượng giá bàn cờ cho máy
+                node = eBoard.GetMaxNode();//lưu vị trí máy sẽ đánh
+                int r, c;
+                r = node.Row; c = node.Column;
+                board[r, c] = currPlayer; //Lưu loại cờ vừa đánh vào mảng
+                DrawDataBoard(r, c, true, true); //Vẽ con cờ theo lượt chơi
+                end = CheckEnd(r, c);//Kiểm tra xem trận đấu kết thúc chưa
+
+                if (end == Player.Com)//Nếu máy thắng
+                {
+                    OnLose();//Khai báo sư kiện Lose
+                    OWinorLose();//Hiển thị 5 ô Lose.
+                }
+                else if (end == Player.None)
+                {
+                    currPlayer = Player.Human;//Thiết lập lại lượt chơi
+                    OnComDanhXong();// Khai báo sự kiện người đánh xong
+                }
+            }
+        }
         //Hàm đánh cờ
         public void grdBanCo_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -177,10 +202,10 @@ namespace Gomoku_1312198
             {
                 Point toado = e.GetPosition(grdBanCo); //Lấy tọa độ chuột
                 //Xử lý tọa độ
-                int cl = ((int)toado.X / length); ////chia lấy phần nguyên để biết đc chuột đang ở dòng, cột nào
+                int cl = ((int)toado.X / length);
                 int rw = ((int)toado.Y / length);
 
-                Node node = new Node();/// node.Row=rw, node.Column = cl
+
                 if (board[rw, cl] == Player.None) //Nếu ô bấm chưa có cờ
                 {
                     if (currPlayer == Player.Human && end == Player.None)//Nếu lượt đi là người và trận đấu chưa kết thúc
@@ -191,7 +216,7 @@ namespace Gomoku_1312198
                         if (end == Player.Human)//Nếu người thắng cuộc là người
                         {
                             OnWin();//Khai báo sự kiện Win
-                            OnWinOrLose();//Hiển thị 5 ô Win.
+                            OWinorLose();//Hiển thị 5 ô Win.
                         }
                         else if (end == Player.None) //Nếu trận đấu chưa kết thúc
                         {
@@ -199,29 +224,15 @@ namespace Gomoku_1312198
                             OnHumanDanhXong(); // Khai báo sự kiện người đánh xong
                         }
                     }
-                    if (currPlayer == Player.Com && end == Player.None)//Nếu lượt đi là máy và trận đấu chưa kết thúc
+                    try
                     {
-                        //Tìm đường đi cho máy
-                        eBoard.ResetBoard();///tại s lại reset bàn cở??????????????????????????
-                        LuongGia(Player.Com);//Lượng giá bàn cờ cho máy
-                        node = eBoard.GetMaxNode();//lưu vị trí máy sẽ đánh
-                        int r, c;
-                        r = node.Row; c = node.Column;
-                        board[r, c] = currPlayer; //Lưu loại cờ vừa đánh vào mảng
-                        DrawDataBoard(r, c, true, true); //Vẽ con cờ theo lượt chơi
-                        end = CheckEnd(r, c);//Kiểm tra xem trận đấu kết thúc chưa
-
-                        if (end == Player.Com)//Nếu máy thắng
-                        {
-                            OnLose();//Khai báo sư kiện Lose
-                            OnWinOrLose();//Hiển thị 5 ô Lose.
-                        }
-                        else if (end == Player.None)
-                        {
-                            currPlayer = Player.Human;//Thiết lập lại lượt chơi
-                            OnComDanhXong();// Khai báo sự kiện người đánh xong
-                        }
+                        worker.RunWorkerAsync();
                     }
+                    catch
+                    {
+
+                    }
+
 
                 }
             }
@@ -243,7 +254,7 @@ namespace Gomoku_1312198
                         {
                             currPlayer = Player.Human; //Thiết lập lại lượt chơi
                             OnWin();//Khai báo sư kiện Win
-                            OnWinOrLose();//Hiển thị 5 ô Win.
+                            OWinorLose();//Hiển thị 5 ô Win.
                         }
                         else
                         {
@@ -259,7 +270,7 @@ namespace Gomoku_1312198
                         if (end == Player.Com)//Nếu người chơi 2 thắng
                         {
                             OnWin();//Khai báo sư kiện Win
-                            OnWinOrLose();//Hiển thị 5 ô Win.
+                            OWinorLose();//Hiển thị 5 ô Win.
                         }
                         else
                         {
@@ -289,7 +300,7 @@ namespace Gomoku_1312198
                         if (end == Player.Human)//Nếu người thắng cuộc là mình
                         {
                             OnWin();//Khai báo sự kiện Win
-                            OnWinOrLose();//Hiển thị 5 ô Win.
+                            OWinorLose();//Hiển thị 5 ô Win.
                             MainWindow.newgame1 = true;
                         }
                         else if (end == Player.None) //Nếu trận đấu chưa kết thúc
@@ -387,8 +398,7 @@ namespace Gomoku_1312198
                                     {
                                         eBoard.GiaTri[i, j + k] += TanCong[cntHuman];
                                     }
-                                    //Nếu chơi theo luật Việt Nam
-                                    //if (Option.GamePlay == LuatChoi.Vietnamese)
+                                    
                                         //Xét trường hợp chặn 2 đầu
                                         //Nếu chận 2 đầu thì gán giá trị cho các ô đó bằng 0
                                         if (j - 1 >= 0 && j + 5 <= column - 1 && board[i, j - 1] == Player.Com && board[i, j + 5] == Player.Com)
@@ -409,7 +419,7 @@ namespace Gomoku_1312198
                                         eBoard.GiaTri[i, j + k] += TanCong[cntCom];
                                     }
                                     //Trường hợp chặn 2 đầu
-                                   // if (Option.GamePlay == LuatChoi.Vietnamese)
+                                 
                                         if (j - 1 >= 0 && j + 5 <= column - 1 && board[i, j - 1] == Player.Human && board[i, j + 5] == Player.Human)
                                         {
                                             eBoard.GiaTri[i, j + k] = 0;
@@ -419,7 +429,7 @@ namespace Gomoku_1312198
                                 if ((j + k - 1 > 0) && (j + k + 1 <= column - 1) && (cntHuman == 4 || cntCom == 4)
                                    && (board[i, j + k - 1] == Player.None || board[i, j + k + 1] == Player.None))
                                 {
-                                    eBoard.GiaTri[i, j + k] *= 3; /////tại sao?
+                                    eBoard.GiaTri[i, j + k] *= 3;
                                 }
                             }
                         }
@@ -459,8 +469,8 @@ namespace Gomoku_1312198
                                 {
                                     if (player == Player.Human) eBoard.GiaTri[i + k, j] += PhongThu[cntCom];
                                     else eBoard.GiaTri[i + k, j] += TanCong[cntCom];
-                                    // Truong hop bi chan 2 dau.
-                                   // if (Option.GamePlay == LuatChoi.Vietnamese)
+                                    //Truong hop bi chan 2 dau.
+                                   
                                         if (i - 1 >= 0 && i + 5 <= row - 1 && board[i - 1, j] == Player.Human && board[i + 5, j] == Player.Human)
                                             eBoard.GiaTri[i + k, j] = 0;
                                 }
@@ -498,7 +508,7 @@ namespace Gomoku_1312198
                                     if (player == Player.Com) eBoard.GiaTri[i + k, j + k] += PhongThu[cntHuman];
                                     else eBoard.GiaTri[i + k, j + k] += TanCong[cntHuman];
                                     // Truong hop bi chan 2 dau.
-                                   // if (Option.GamePlay == LuatChoi.Vietnamese)
+                                   
                                         if (i - 1 >= 0 && j - 1 >= 0
                                             && i + 5 <= row - 1 && j + 5 <= column - 1
                                             && board[i - 1, j - 1] == Player.Com && board[i + 5, j + 5] == Player.Com)
@@ -509,7 +519,7 @@ namespace Gomoku_1312198
                                     if (player == Player.Human) eBoard.GiaTri[i + k, j + k] += PhongThu[cntCom];
                                     else eBoard.GiaTri[i + k, j + k] += TanCong[cntCom];
                                     // Truong hop bi chan 2 dau.
-                                   // if (Option.GamePlay == LuatChoi.Vietnamese)
+                                
                                         if ((i - 1) >= 0 && j - 1 >= 0
                                             && i + 5 <= row - 1 && j + 5 <= column - 1
                                             && board[i - 1, j - 1] == Player.Human && board[i + 5, j + 5] == Player.Human)
@@ -561,7 +571,7 @@ namespace Gomoku_1312198
                                     if (player == Player.Human) eBoard.GiaTri[i - k, j + k] += PhongThu[cntCom];
                                     else eBoard.GiaTri[i - k, j + k] += TanCong[cntCom];
                                     // Truong hop bi chan 2 dau.
-                                   // if (Option.GamePlay == LuatChoi.Vietnamese)
+                                   
                                         if (i + 1 <= row - 1 && j - 1 >= 0 && i - 5 >= 0 && j + 5 <= column - 1 && board[i + 1, j - 1] == Player.Human && board[i - 5, j + 5] == Player.Human)
                                         {
                                             eBoard.GiaTri[i - k, j + k] = 0;
@@ -588,16 +598,33 @@ namespace Gomoku_1312198
             if (cur == Player.Human) return Player.Com;
             return Player.None;
         }
+        //Hàm lấy thông tin 5 ô Win hoặc Lose
+        public static void OWinorLose()
+        {
+            Node node = new Node();
+            for (int i = 0; i < 5; i++)
+            {
+                node = OWin.GiaTri[i];
+                DanhDau ddau = new DanhDau();
+                ddau.Height = 40;
+                ddau.Width = 40;
+                ddau.Opacity = 100;
+                ddau.HorizontalAlignment = 0;
+                ddau.VerticalAlignment = 0;
+                ddau.Margin = new Thickness(node.Column * length - 2, node.Row * length - 3, 0, 0);
+                grdBanCo.Children.Add(ddau);
+            }
+        }
         //Hàm kiểm tra trận đấu kết thúc chưa
-        public static Player CheckEnd(int rw, int cl) ///kiểm tra kết thúc trận đấu chưa và trả về ng chiến thắng
+        public static Player CheckEnd(int rw, int cl)
         {
             int rowTemp = rw;
             int colTemp = cl;
             int count1, count2, count3, count4;
             count1 = count2 = count3 = count4 = 1;
             Player cur = board[rw, cl];
-            OWin.Reset();//// tạo mảng 10 Node, ThuTu =0 in Owin
-            OWin.Add(new Node(rowTemp, colTemp));///add Node vào mảng OWin
+            OWin.Reset();
+            OWin.Add(new Node(rowTemp, colTemp));
             #region Kiem Tra Hang Ngang
             while (colTemp - 1 >= 0 && board[rowTemp, colTemp - 1] == cur)
             {
@@ -615,13 +642,14 @@ namespace Gomoku_1312198
             if (count1 == 5)
             {
                
+                
                     if ((colTemp - 5 >= 0 && colTemp + 1 <= column - 1 && board[rowTemp, colTemp + 1] == board[rowTemp, colTemp - 5] && board[rowTemp, colTemp + 1] == DoiNgich(cur)) ||
                         (colTemp - 5 < 0 && (board[rowTemp, colTemp + 1] == DoiNgich(cur))) ||
                         (colTemp + 1 > column - 1 && (board[rowTemp, colTemp - 5] == DoiNgich(cur))))
                     { }
                     else
                         return cur;
-               
+              
             }
             #endregion
             #region Kiem Tra Hang Doc
@@ -644,6 +672,8 @@ namespace Gomoku_1312198
             }
             if (count2 == 5)
             {
+               
+                
 
                     if ((rowTemp - 5 >= 0 && rowTemp + 1 <= column - 1 && board[rowTemp + 1, colTemp] == board[rowTemp - 5, colTemp] && board[rowTemp + 1, colTemp] == DoiNgich(cur)) ||
                         (rowTemp - 5 < 0 && (board[rowTemp + 1, colTemp] == DoiNgich(cur))) ||
@@ -651,7 +681,7 @@ namespace Gomoku_1312198
                     { }
                     else
                         return cur;
-
+               
             }
             #endregion
             #region Kiem Tra Duong Cheo Chinh (\)
@@ -677,6 +707,7 @@ namespace Gomoku_1312198
             }
             if (count3 == 5)
             {
+               
                 
                     if ((colTemp - 5 >= 0 && rowTemp - 5 >= 0 && colTemp + 1 <= column - 1 && rowTemp + 1 <= row - 1 && board[rowTemp + 1, colTemp + 1] == board[rowTemp - 5, colTemp - 5] && board[rowTemp + 1, colTemp + 1] == DoiNgich(cur)) ||
                            ((colTemp - 5 < 0 || rowTemp - 5 < 0) && (board[rowTemp + 1, colTemp + 1] == DoiNgich(cur))) ||
@@ -684,9 +715,10 @@ namespace Gomoku_1312198
                     { }
                     else
                         return cur;
+               
             }
             #endregion
-            #region Kiem Tra Duong Cheo Phu(/)
+            #region Kiem Tra Duong Cheo Phu
             rowTemp = rw;
             colTemp = cl;
             OWin.Reset();
@@ -709,7 +741,7 @@ namespace Gomoku_1312198
             }
             if (count4 == 5)
             {
-            
+               
                 
                     if ((rowTemp - 1 >= 0 && rowTemp + 5 <= row - 1 && colTemp + 1 <= column - 1 && colTemp - 5 >= 0 && rowTemp + 1 <= row - 1 && board[rowTemp - 1, colTemp + 1] == board[rowTemp + 5, colTemp - 5] && board[rowTemp - 1, colTemp + 1] == DoiNgich(cur)) ||
                           ((colTemp - 5 < 0 || rowTemp + 5 > row - 1) && (board[rowTemp - 1, colTemp + 1] == DoiNgich(cur))) ||
@@ -717,28 +749,10 @@ namespace Gomoku_1312198
                     { }
                     else
                         return cur;
-                
-         
+               
             }
             #endregion
             return Player.None;
-        }
-        //Hàm lấy thông tin 5 ô Win hoặc Lose
-        public static void OnWinOrLose() ///hiển thị 5 ô cờ chiến thắng
-        {
-            Node node = new Node();
-            for (int i = 0; i < 5; i++)
-            {
-                node = OWin.GiaTri[i];
-                DanhDau hv = new DanhDau();
-                hv.Height = 40;
-                hv.Width = 40;
-                hv.Opacity = 100;
-                hv.HorizontalAlignment = 0;
-                hv.VerticalAlignment = 0;
-                hv.Margin = new Thickness(node.Column * length - 2, node.Row * length - 3, 0, 0);
-                grdBanCo.Children.Add(hv);
-            }
         }
 
         public static void DrawDataBoard(int rw, int cl, bool record, bool type)
@@ -747,58 +761,56 @@ namespace Gomoku_1312198
             {
                 if (currPlayer == Player.Human)
                 {
-                    UserControl chess;
-                    chess = new Image.Chess.Chess_O();
-                    chess.Height = length;////length độ dài mỗi ô 40
-                    chess.Width = length;
-                    chess.HorizontalAlignment = 0;
-                    chess.VerticalAlignment = 0;
-                    chess.Margin = new Thickness(cl * length, rw * length, 0, 0);////left,top,right,bottom
-                    grdBanCo.Children.Add(chess);
+                    UserControl co;
+                    co = new Image.Chess.Chess_O();
+                    co.Height = length;
+                    co.Width = length;
+                    co.HorizontalAlignment = 0;
+                    co.VerticalAlignment = 0;
+                    co.Margin = new Thickness(cl * length, rw * length, 0, 0);
+                    grdBanCo.Children.Add(co);
                     //Ghi lại cờ vừa đánh
-                    hv.Opacity = 100;
-                    hv.Margin = new Thickness(cl * length - 10, rw * length - 10, 0, 0);/////??? -10
+                    ddau.Opacity = 100;
+                    ddau.Margin = new Thickness(cl * length - 10, rw * length - 10, 0, 0);
                 }
                 else if (currPlayer == Player.Com || currPlayer == Player.Online)
                 {
-                    UserControl chess;
-                    chess = new Image.Chess.Chess_X();
-                    chess.Height = length;
-                    chess.Width = length;
-                    chess.HorizontalAlignment = 0;
-                    chess.VerticalAlignment = 0;
-                    chess.Margin = new Thickness(cl * length, rw * length, 0, 0);
-                    grdBanCo.Children.Add(chess);
-                    hv.Opacity = 100;
-                    hv.Margin = new Thickness(cl * length - 10, rw * length - 10, 0, 0);
+                    UserControl co;
+                    co = new Image.Chess.Chess_X();
+                    co.Height = length;
+                    co.Width = length;
+                    co.HorizontalAlignment = 0;
+                    co.VerticalAlignment = 0;
+                    co.Margin = new Thickness(cl * length, rw * length, 0, 0);
+                    grdBanCo.Children.Add(co);
+                    ddau.Opacity = 100;
+                    ddau.Margin = new Thickness(cl * length - 10, rw * length - 10, 0, 0);
                 }
 
             }
             else
             {
-                System.Windows.Controls.Image Chess1 = new System.Windows.Controls.Image();
-                if (currPlayer == Player.Human)///O
+                System.Windows.Controls.Image co1 = new System.Windows.Controls.Image();
+                if (currPlayer == Player.Human)
                 {
-                    Chess1.Source = new BitmapImage(new Uri("pack://application:,,,/Image/Chess/ok-icon (1).png"));
-                    Chess1.Width = Chess1.Height = length;
-                    Chess1.HorizontalAlignment = 0;
-                    Chess1.VerticalAlignment = 0;
-                    Chess1.Margin = new Thickness(cl * length, rw * length, 0, 0);
-                    Chess1.Opacity = 100;
-                    grdBanCo.Children.Add(Chess1);
-                    ////Tại sao k có hv như trên
+                    co1.Source = new BitmapImage(new Uri("pack://application:,,,/Image/Chess/ok-icon (1).png"));
+                    co1.Width = co1.Height = length;
+                    co1.HorizontalAlignment = 0;
+                    co1.VerticalAlignment = 0;
+                    co1.Margin = new Thickness(cl * length, rw * length, 0, 0);
+                    co1.Opacity = 100;
+                    grdBanCo.Children.Add(co1);
                 }
                 else if (currPlayer == Player.Com || currPlayer == Player.Online)
                 {
-                    System.Windows.Controls.Image Chess2 = new System.Windows.Controls.Image();
-                    Chess2.Source = new BitmapImage(new Uri("pack://application:,,,/Image/Chess/Cute-Ball-Stop-icon.png"));
-                    Chess2.Width = Chess2.Height = length;
-                    Chess2.HorizontalAlignment = 0;
-                    Chess2.VerticalAlignment = 0;
-                    Chess2.Margin = new Thickness(cl * length, rw * length, 0, 0);
-                    Chess2.Opacity = 100;
-                    grdBanCo.Children.Add(Chess2);
-                    ////Tại sao k có hv như trên
+                    System.Windows.Controls.Image co2 = new System.Windows.Controls.Image();
+                    co2.Source = new BitmapImage(new Uri("pack://application:,,,/Image/Chess/Cute-Ball-Stop-icon.png"));
+                    co2.Width = co2.Height = length;
+                    co2.HorizontalAlignment = 0;
+                    co2.VerticalAlignment = 0;
+                    co2.Margin = new Thickness(cl * length, rw * length, 0, 0);
+                    co2.Opacity = 100;
+                    grdBanCo.Children.Add(co2);
                 }
             }
         }

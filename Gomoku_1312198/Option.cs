@@ -11,7 +11,7 @@ namespace Gomoku_1312198
         International,
         Vietnamese,
     }
-
+  
 
     class Option
     {
@@ -26,11 +26,12 @@ namespace Gomoku_1312198
             get { return this.luotChoi; }
             set { this.luotChoi = value; }
         }
-        //public LuatChoi GamePlay
-        //{
-        //    get { return this.gamePlay; }
-        //    set { this.gamePlay = value; }
-        //}
+
+        public LuatChoi GamePlay
+        {
+            get { return this.GamePlay; }
+            set { this.GamePlay = value; }
+        }
         public Player WhoPlayWith
         {
             get { return this.whoPlayWith; }

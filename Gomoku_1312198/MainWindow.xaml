@@ -73,7 +73,7 @@
             <Button  x:Name="btnStart" Grid.Column="2" Content="Bắt đầu" HorizontalAlignment="Left" Margin="25, 30, 0, 10" Width="100"  Cursor="Hand" Background="#FF2CDCBC" Click="btnStart_Click" FontWeight="Bold" />
             <Button  x:Name="btnStartMay" Grid.Column="3" Content="Chơi với Máy" HorizontalAlignment="Left"  Margin="5, 30, 0, 10"  Width="100" Cursor="Hand" Background="#FF2CDCBC" Click="btnStartMay_Click" FontWeight="Bold"/>
         </Grid>
-        <Grid Grid.Row="2" Grid.ColumnSpan="5" Margin="0,0, 0, 0">
+        <Grid Grid.Row="2" Grid.ColumnSpan="4" Margin="0,0,10,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
@@ -92,27 +92,25 @@
                         <ImageBrush ImageSource="Image/Message/Moodle.png" Stretch="Fill"/>
                     </Label.Background>
                 </Label>
-                <Label Grid.Column="1" Height="30" Width="400" HorizontalAlignment="Left" Background="#FF337AB7" Content="Chat/History" Foreground="White" FontSize="14"/>
+                <Label Grid.Column="1" Height="30" Width="535" HorizontalAlignment="Left" Background="#FF337AB7" Content="Chat/History" Foreground="White" FontSize="14"/>
             </Grid>
-            <Border Grid.Row="1" Width="430" BorderBrush="#FF337AB7" BorderThickness="2" HorizontalAlignment="Left">
+            <Border Grid.Row="1" Width="539" BorderBrush="#FF337AB7" Margin="0, 0, 0, 0" BorderThickness="2" HorizontalAlignment="Left">
                 <Grid VerticalAlignment="Top" >
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
+                  
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" MinHeight="239"/>
                         <RowDefinition Height="0*"/>
                     </Grid.RowDefinitions>
 
-                    <ListBox  Grid.Row="0" x:Name="chatBox"  Width="424" Height="272" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,-33" BorderBrush="{x:Null}" Grid.RowSpan="2" />
-                    <Grid VerticalAlignment="Bottom" Background="WhiteSmoke" Height="50" Margin="-2,0,2,-33" Grid.RowSpan="2">
-                        <Grid HorizontalAlignment="Left">
+                    <ListBox  Grid.Row="0" x:Name="chatBox"  Width="531" Height="272" HorizontalAlignment="Left" VerticalAlignment="Top" BorderBrush="{x:Null}" Grid.RowSpan="2" Margin="0,0,0,-33" />
+                    <Grid VerticalAlignment="Bottom" Background="WhiteSmoke" Height="50" Margin="2,0,6,-33" Grid.RowSpan="2">
+                        <Grid HorizontalAlignment="Left" Width="379">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0" x:Name="txtMessage" Text="Type your message here..." Width="200" Height="30" FontSize="14" Margin="10, 10, 0, 10" LostKeyboardFocus="txtMessage_LostKeyboardFocus" GotFocus="txtMessage_GotFocus" Foreground="#FF878787" />
-                            <Button Grid.Column="1" x:Name="btnSend" Width="70" Height="30" FontSize="16" Content="Send" HorizontalAlignment="Left" Click="btnSend_Click"  Foreground="White" Background="#FFFFA200" Cursor="Hand"/>
+                            <TextBox Grid.Column="0" x:Name="txtMessage" Text="Type your message here..." Height="30" FontSize="14" Margin="10,10,94,10" LostKeyboardFocus="txtMessage_LostKeyboardFocus" GotFocus="txtMessage_GotFocus" Foreground="#FF878787" Grid.ColumnSpan="2" />
+                            <Button x:Name="btnSend" Width="70" Height="30" FontSize="16" Content="Send" HorizontalAlignment="Left" Click="btnSend_Click"  Foreground="White" Background="#FFFFA200" Cursor="Hand" Margin="296,10,0,10" Grid.Column="1"/>
                         </Grid>
                     </Grid>
 
@@ -122,7 +120,7 @@
 
         <TextBox Name="Message" Grid.ColumnSpan="2" Visibility="Hidden" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" Text="{Binding Source={x:Static Column:NhanMessage.ketnoi}, Path=Message, Mode=OneWay}"  VerticalAlignment="Top" Width="120"  SelectionChanged="Message_SelectionChanged"/>
         <Label Content="© 2015 Lajos Veres - Gomoku - Five in a row - multiplayer (source)" HorizontalAlignment="Left"  Grid.Row="4" Margin="-549,7,0,53" FontWeight="Bold" FontSize="16" Width="511"/>
-        <Grid x:Name="grdBanCo" Margin="-549,38,69,10" Height="480" Width="480" Grid.RowSpan="4" Background="#FFFEFEFE" />
+        <Grid x:Name="grdBanCo"  Margin="-550,38,69,10" Height="480" Width="480" Grid.RowSpan="4" Background="#FFFEFEFE" />
     </Grid>
 
 </Window>

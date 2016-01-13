@@ -56,6 +56,7 @@
       <HintPath>C:\Users\UtHeo\Downloads\1312009_8\1312009_8\WpfApplication1\bin\Debug\SocketIoClientDotNet.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
